@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import ssl
 
@@ -20,14 +21,21 @@ class TLSConfig:
     .. _`SSL version`:
         https://docs.python.org/3.5/library/ssl.html#ssl.PROTOCOL_TLSv1
     """
+
     cert = None
     ca_cert = None
     verify = None
     ssl_version = None
 
-    def __init__(self, client_cert=None, ca_cert=None, verify=None,
-                 ssl_version=None, assert_hostname=None,
-                 assert_fingerprint=None):
+    def __init__(
+        self,
+        client_cert=None,
+        ca_cert=None,
+        verify=None,
+        ssl_version=None,
+        assert_hostname=None,
+        assert_fingerprint=None,
+    ):
         # Argument compatibility/mapping with
         # https://docs.docker.com/engine/articles/https/
         # This diverges from the Docker CLI in that users can specify 'tls'
@@ -52,10 +60,11 @@ class TLSConfig:
             # before doing so, detect openssl version to ensure we can support
             # it.
             if ssl.OPENSSL_VERSION_INFO[:3] >= (1, 0, 1) and hasattr(
-                    ssl, 'PROTOCOL_TLSv1_2'):
+                ssl, "PROTOCOL_TLSv1_2"
+            ):
                 # If the OpenSSL version is high enough to support TLSv1_2,
                 # then we should use it.
-                self.ssl_version = getattr(ssl, 'PROTOCOL_TLSv1_2')
+                self.ssl_version = getattr(ssl, "PROTOCOL_TLSv1_2")
             else:
                 # Otherwise, TLS v1.0 seems to be the safest default;
                 # SSLv23 fails in mysterious ways:
@@ -71,15 +80,15 @@ class TLSConfig:
                 tls_cert, tls_key = client_cert
             except ValueError:
                 raise errors.TLSParameterError(
-                    'client_cert must be a tuple of'
-                    ' (client certificate, key file)'
+                    "client_cert must be a tuple of" " (client certificate, key file)"
                 )
 
-            if not (tls_cert and tls_key) or (not os.path.isfile(tls_cert) or
-                                              not os.path.isfile(tls_key)):
+            if not (tls_cert and tls_key) or (
+                not os.path.isfile(tls_cert) or not os.path.isfile(tls_key)
+            ):
                 raise errors.TLSParameterError(
-                    'Path to a certificate and key files must be provided'
-                    ' through the client_cert param'
+                    "Path to a certificate and key files must be provided"
+                    " through the client_cert param"
                 )
             self.cert = (tls_cert, tls_key)
 
@@ -88,7 +97,7 @@ class TLSConfig:
         self.ca_cert = ca_cert
         if self.verify and self.ca_cert and not os.path.isfile(self.ca_cert):
             raise errors.TLSParameterError(
-                'Invalid CA certificate provided for `ca_cert`.'
+                "Invalid CA certificate provided for `ca_cert`."
             )
 
     def configure_client(self, client):
@@ -105,8 +114,11 @@ class TLSConfig:
         if self.cert:
             client.cert = self.cert
 
-        client.mount('https://', SSLHTTPAdapter(
-            ssl_version=self.ssl_version,
-            assert_hostname=self.assert_hostname,
-            assert_fingerprint=self.assert_fingerprint,
-        ))
+        client.mount(
+            "https://",
+            SSLHTTPAdapter(
+                ssl_version=self.ssl_version,
+                assert_hostname=self.assert_hostname,
+                assert_fingerprint=self.assert_fingerprint,
+            ),
+        )

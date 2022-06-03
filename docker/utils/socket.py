@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import errno
 import os
 import select
@@ -29,9 +30,9 @@ def read(socket, n=4096):
         select.select([socket], [], [])
 
     try:
-        if hasattr(socket, 'recv'):
+        if hasattr(socket, "recv"):
             return socket.recv(n)
-        if isinstance(socket, getattr(pysocket, 'SocketIO')):
+        if isinstance(socket, getattr(pysocket, "SocketIO")):
             return socket.read(n)
         return os.read(socket.fileno(), n)
     except OSError as e:
@@ -65,7 +66,7 @@ def next_frame_header(socket):
     except SocketError:
         return (-1, -1)
 
-    stream, actual = struct.unpack('>BxxxL', data)
+    stream, actual = struct.unpack(">BxxxL", data)
     return (stream, actual)
 
 
@@ -164,4 +165,4 @@ def demux_adaptor(stream_id, data):
     elif stream_id == STDERR:
         return (None, data)
     else:
-        raise ValueError(f'{stream_id} is not a valid stream')
+        raise ValueError(f"{stream_id} is not a valid stream")

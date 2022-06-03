@@ -1,9 +1,11 @@
+# -*- coding: utf-8 -*-
 from .resource import Model, Collection
 
 
 class Node(Model):
     """A node in a swarm."""
-    id_attribute = 'ID'
+
+    id_attribute = "ID"
 
     @property
     def version(self):
@@ -12,7 +14,7 @@ class Node(Model):
         server, the :py:meth:`update` function will not work and you will
         need to call :py:meth:`reload` before calling it again.
         """
-        return self.attrs.get('Version').get('Index')
+        return self.attrs.get("Version").get("Index")
 
     def update(self, node_spec):
         """
@@ -63,6 +65,7 @@ class Node(Model):
 
 class NodeCollection(Collection):
     """Nodes on the Docker server."""
+
     model = Node
 
     def get(self, node_id):
@@ -101,7 +104,4 @@ class NodeCollection(Collection):
 
             >>> client.nodes.list(filters={'role': 'manager'})
         """
-        return [
-            self.prepare_model(n)
-            for n in self.client.api.nodes(*args, **kwargs)
-        ]
+        return [self.prepare_model(n) for n in self.client.api.nodes(*args, **kwargs)]

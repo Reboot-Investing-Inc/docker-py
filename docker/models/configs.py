@@ -1,17 +1,19 @@
+# -*- coding: utf-8 -*-
 from ..api import APIClient
 from .resource import Model, Collection
 
 
 class Config(Model):
     """A config."""
-    id_attribute = 'ID'
+
+    id_attribute = "ID"
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: '{self.name}'>"
 
     @property
     def name(self):
-        return self.attrs['Spec']['Name']
+        return self.attrs["Spec"]["Name"]
 
     def remove(self):
         """
@@ -26,11 +28,13 @@ class Config(Model):
 
 class ConfigCollection(Collection):
     """Configs on the Docker server."""
+
     model = Config
 
     def create(self, **kwargs):
         obj = self.client.api.create_config(**kwargs)
         return self.prepare_model(obj)
+
     create.__doc__ = APIClient.create_config.__doc__
 
     def get(self, config_id):

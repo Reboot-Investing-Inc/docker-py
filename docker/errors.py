@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import requests
 
 
@@ -16,15 +17,16 @@ def create_api_error_from_http_exception(e):
     """
     response = e.response
     try:
-        explanation = response.json()['message']
+        explanation = response.json()["message"]
     except ValueError:
-        explanation = (response.content or '').strip()
+        explanation = (response.content or "").strip()
     cls = APIError
     if response.status_code == 404:
-        if explanation and ('No such image' in str(explanation) or
-                            'not found: does not exist or no pull access'
-                            in str(explanation) or
-                            'repository does not exist' in str(explanation)):
+        if explanation and (
+            "No such image" in str(explanation)
+            or "not found: does not exist or no pull access" in str(explanation)
+            or "repository does not exist" in str(explanation)
+        ):
             cls = ImageNotFound
         else:
             cls = NotFound
@@ -35,6 +37,7 @@ class APIError(requests.exceptions.HTTPError, DockerException):
     """
     An HTTP error from the API.
     """
+
     def __init__(self, message, response=None, explanation=None):
         # requests 1.2 supports response as a keyword argument, but
         # requests 1.1 doesn't
@@ -46,14 +49,14 @@ class APIError(requests.exceptions.HTTPError, DockerException):
         message = super().__str__()
 
         if self.is_client_error():
-            message = '{} Client Error for {}: {}'.format(
-                self.response.status_code, self.response.url,
-                self.response.reason)
+            message = "{} Client Error for {}: {}".format(
+                self.response.status_code, self.response.url, self.response.reason
+            )
 
         elif self.is_server_error():
-            message = '{} Server Error for {}: {}'.format(
-                self.response.status_code, self.response.url,
-                self.response.reason)
+            message = "{} Server Error for {}: {}".format(
+                self.response.status_code, self.response.url, self.response.reason
+            )
 
         if self.explanation:
             message = f'{message} ("{self.explanation}")'
@@ -112,10 +115,12 @@ class TLSParameterError(DockerException):
         self.msg = msg
 
     def __str__(self):
-        return self.msg + (". TLS configurations should map the Docker CLI "
-                           "client configurations. See "
-                           "https://docs.docker.com/engine/articles/https/ "
-                           "for API details.")
+        return self.msg + (
+            ". TLS configurations should map the Docker CLI "
+            "client configurations. See "
+            "https://docs.docker.com/engine/articles/https/ "
+            "for API details."
+        )
 
 
 class NullResource(DockerException, ValueError):
@@ -126,6 +131,7 @@ class ContainerError(DockerException):
     """
     Represents a container that has exited with a non-zero exit code.
     """
+
     def __init__(self, container, exit_status, command, image, stderr):
         self.container = container
         self.exit_status = exit_status
@@ -134,8 +140,9 @@ class ContainerError(DockerException):
         self.stderr = stderr
 
         err = f": {stderr}" if stderr is not None else ""
-        msg = ("Command '{}' in image '{}' returned non-zero exit "
-               "status {}{}").format(command, image, exit_status, err)
+        msg = (
+            "Command '{}' in image '{}' returned non-zero exit " "status {}{}"
+        ).format(command, image, exit_status, err)
 
         super().__init__(msg)
 
@@ -163,8 +170,8 @@ def create_unexpected_kwargs_error(name, kwargs):
         text.append("got an unexpected keyword argument ")
     else:
         text.append("got unexpected keyword arguments ")
-    text.append(', '.join(quoted_kwargs))
-    return TypeError(''.join(text))
+    text.append(", ".join(quoted_kwargs))
+    return TypeError("".join(text))
 
 
 class MissingContextParameter(DockerException):
@@ -172,7 +179,7 @@ class MissingContextParameter(DockerException):
         self.param = param
 
     def __str__(self):
-        return (f"missing parameter: {self.param}")
+        return f"missing parameter: {self.param}"
 
 
 class ContextAlreadyExists(DockerException):
@@ -180,7 +187,7 @@ class ContextAlreadyExists(DockerException):
         self.name = name
 
     def __str__(self):
-        return (f"context {self.name} already exists")
+        return f"context {self.name} already exists"
 
 
 class ContextException(DockerException):
@@ -188,7 +195,7 @@ class ContextException(DockerException):
         self.msg = msg
 
     def __str__(self):
-        return (self.msg)
+        return self.msg
 
 
 class ContextNotFound(DockerException):
@@ -196,4 +203,4 @@ class ContextNotFound(DockerException):
         self.name = name
 
     def __str__(self):
-        return (f"context '{self.name}' not found")
+        return f"context '{self.name}' not found"

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import struct
 import urllib
@@ -8,12 +9,22 @@ import requests.exceptions
 import websocket
 
 from .. import auth
-from ..constants import (DEFAULT_NUM_POOLS, DEFAULT_NUM_POOLS_SSH,
-                         DEFAULT_MAX_POOL_SIZE, DEFAULT_TIMEOUT_SECONDS,
-                         DEFAULT_USER_AGENT, IS_WINDOWS_PLATFORM,
-                         MINIMUM_DOCKER_API_VERSION, STREAM_HEADER_SIZE_BYTES)
-from ..errors import (DockerException, InvalidVersion, TLSParameterError,
-                      create_api_error_from_http_exception)
+from ..constants import (
+    DEFAULT_NUM_POOLS,
+    DEFAULT_NUM_POOLS_SSH,
+    DEFAULT_MAX_POOL_SIZE,
+    DEFAULT_TIMEOUT_SECONDS,
+    DEFAULT_USER_AGENT,
+    IS_WINDOWS_PLATFORM,
+    MINIMUM_DOCKER_API_VERSION,
+    STREAM_HEADER_SIZE_BYTES,
+)
+from ..errors import (
+    DockerException,
+    InvalidVersion,
+    TLSParameterError,
+    create_api_error_from_http_exception,
+)
 from ..tls import TLSConfig
 from ..transport import SSLHTTPAdapter, UnixHTTPAdapter
 from ..utils import check_resource, config, update_headers, utils
@@ -45,19 +56,20 @@ except ImportError:
 
 
 class APIClient(
-        requests.Session,
-        BuildApiMixin,
-        ConfigApiMixin,
-        ContainerApiMixin,
-        DaemonApiMixin,
-        ExecApiMixin,
-        ImageApiMixin,
-        NetworkApiMixin,
-        PluginApiMixin,
-        SecretApiMixin,
-        ServiceApiMixin,
-        SwarmApiMixin,
-        VolumeApiMixin):
+    requests.Session,
+    BuildApiMixin,
+    ConfigApiMixin,
+    ContainerApiMixin,
+    DaemonApiMixin,
+    ExecApiMixin,
+    ImageApiMixin,
+    NetworkApiMixin,
+    PluginApiMixin,
+    SecretApiMixin,
+    ServiceApiMixin,
+    SwarmApiMixin,
+    VolumeApiMixin,
+):
     """
     A low-level client for the Docker Engine API.
 
@@ -96,117 +108,131 @@ class APIClient(
             to save in the pool.
     """
 
-    __attrs__ = requests.Session.__attrs__ + ['_auth_configs',
-                                              '_general_configs',
-                                              '_version',
-                                              'base_url',
-                                              'timeout']
+    __attrs__ = requests.Session.__attrs__ + [
+        "_auth_configs",
+        "_general_configs",
+        "_version",
+        "base_url",
+        "timeout",
+    ]
 
-    def __init__(self, base_url=None, version=None,
-                 timeout=DEFAULT_TIMEOUT_SECONDS, tls=False,
-                 user_agent=DEFAULT_USER_AGENT, num_pools=None,
-                 credstore_env=None, use_ssh_client=False,
-                 max_pool_size=DEFAULT_MAX_POOL_SIZE):
+    def __init__(
+        self,
+        base_url=None,
+        version=None,
+        timeout=DEFAULT_TIMEOUT_SECONDS,
+        tls=False,
+        user_agent=DEFAULT_USER_AGENT,
+        num_pools=None,
+        credstore_env=None,
+        use_ssh_client=False,
+        max_pool_size=DEFAULT_MAX_POOL_SIZE,
+    ):
         super().__init__()
 
         if tls and not base_url:
             raise TLSParameterError(
-                'If using TLS, the base_url argument must be provided.'
+                "If using TLS, the base_url argument must be provided."
             )
 
         self.base_url = base_url
         self.timeout = timeout
-        self.headers['User-Agent'] = user_agent
+        self.headers["User-Agent"] = user_agent
 
         self._general_configs = config.load_general_config()
 
-        proxy_config = self._general_configs.get('proxies', {})
+        proxy_config = self._general_configs.get("proxies", {})
         try:
             proxies = proxy_config[base_url]
         except KeyError:
-            proxies = proxy_config.get('default', {})
+            proxies = proxy_config.get("default", {})
 
         self._proxy_configs = ProxyConfig.from_dict(proxies)
 
         self._auth_configs = auth.load_config(
-            config_dict=self._general_configs, credstore_env=credstore_env,
+            config_dict=self._general_configs,
+            credstore_env=credstore_env,
         )
         self.credstore_env = credstore_env
 
-        base_url = utils.parse_host(
-            base_url, IS_WINDOWS_PLATFORM, tls=bool(tls)
-        )
+        base_url = utils.parse_host(base_url, IS_WINDOWS_PLATFORM, tls=bool(tls))
         # SSH has a different default for num_pools to all other adapters
-        num_pools = num_pools or DEFAULT_NUM_POOLS_SSH if \
-            base_url.startswith('ssh://') else DEFAULT_NUM_POOLS
+        num_pools = (
+            num_pools or DEFAULT_NUM_POOLS_SSH
+            if base_url.startswith("ssh://")
+            else DEFAULT_NUM_POOLS
+        )
 
-        if base_url.startswith('http+unix://'):
+        if base_url.startswith("http+unix://"):
             self._custom_adapter = UnixHTTPAdapter(
-                base_url, timeout, pool_connections=num_pools,
-                max_pool_size=max_pool_size
+                base_url,
+                timeout,
+                pool_connections=num_pools,
+                max_pool_size=max_pool_size,
             )
-            self.mount('http+docker://', self._custom_adapter)
-            self._unmount('http://', 'https://')
+            self.mount("http+docker://", self._custom_adapter)
+            self._unmount("http://", "https://")
             # host part of URL should be unused, but is resolved by requests
             # module in proxy_bypass_macosx_sysconf()
-            self.base_url = 'http+docker://localhost'
-        elif base_url.startswith('npipe://'):
+            self.base_url = "http+docker://localhost"
+        elif base_url.startswith("npipe://"):
             if not IS_WINDOWS_PLATFORM:
                 raise DockerException(
-                    'The npipe:// protocol is only supported on Windows'
+                    "The npipe:// protocol is only supported on Windows"
                 )
             try:
                 self._custom_adapter = NpipeHTTPAdapter(
-                    base_url, timeout, pool_connections=num_pools,
-                    max_pool_size=max_pool_size
+                    base_url,
+                    timeout,
+                    pool_connections=num_pools,
+                    max_pool_size=max_pool_size,
                 )
             except NameError:
                 raise DockerException(
-                    'Install pypiwin32 package to enable npipe:// support'
+                    "Install pypiwin32 package to enable npipe:// support"
                 )
-            self.mount('http+docker://', self._custom_adapter)
-            self.base_url = 'http+docker://localnpipe'
-        elif base_url.startswith('ssh://'):
+            self.mount("http+docker://", self._custom_adapter)
+            self.base_url = "http+docker://localnpipe"
+        elif base_url.startswith("ssh://"):
             try:
                 self._custom_adapter = SSHHTTPAdapter(
-                    base_url, timeout, pool_connections=num_pools,
-                    max_pool_size=max_pool_size, shell_out=use_ssh_client
+                    base_url,
+                    timeout,
+                    pool_connections=num_pools,
+                    max_pool_size=max_pool_size,
+                    shell_out=use_ssh_client,
                 )
             except NameError:
                 raise DockerException(
-                    'Install paramiko package to enable ssh:// support'
+                    "Install paramiko package to enable ssh:// support"
                 )
-            self.mount('http+docker://ssh', self._custom_adapter)
-            self._unmount('http://', 'https://')
-            self.base_url = 'http+docker://ssh'
+            self.mount("http+docker://ssh", self._custom_adapter)
+            self._unmount("http://", "https://")
+            self.base_url = "http+docker://ssh"
         else:
             # Use SSLAdapter for the ability to specify SSL version
             if isinstance(tls, TLSConfig):
                 tls.configure_client(self)
             elif tls:
-                self._custom_adapter = SSLHTTPAdapter(
-                    pool_connections=num_pools)
-                self.mount('https://', self._custom_adapter)
+                self._custom_adapter = SSLHTTPAdapter(pool_connections=num_pools)
+                self.mount("https://", self._custom_adapter)
             self.base_url = base_url
 
         # version detection needs to be after unix adapter mounting
-        if version is None or (isinstance(
-                                version,
-                                str
-                                ) and version.lower() == 'auto'):
+        if version is None or (isinstance(version, str) and version.lower() == "auto"):
             self._version = self._retrieve_server_version()
         else:
             self._version = version
         if not isinstance(self._version, str):
             raise DockerException(
-                'Version parameter must be a string or None. Found {}'.format(
+                "Version parameter must be a string or None. Found {}".format(
                     type(version).__name__
                 )
             )
         if utils.version_lt(self._version, MINIMUM_DOCKER_API_VERSION):
             raise InvalidVersion(
-                'API versions below {} are no longer supported by this '
-                'library.'.format(MINIMUM_DOCKER_API_VERSION)
+                "API versions below {} are no longer supported by this "
+                "library.".format(MINIMUM_DOCKER_API_VERSION)
             )
 
     def _retrieve_server_version(self):
@@ -214,18 +240,15 @@ class APIClient(
             return self.version(api_version=False)["ApiVersion"]
         except KeyError:
             raise DockerException(
-                'Invalid response from docker daemon: key "ApiVersion"'
-                ' is missing.'
+                'Invalid response from docker daemon: key "ApiVersion"' " is missing."
             )
         except Exception as e:
-            raise DockerException(
-                f'Error while fetching server API version: {e}'
-            )
+            raise DockerException(f"Error while fetching server API version: {e}")
 
     def _set_request_timeout(self, kwargs):
         """Prepare the kwargs for an HTTP request by inserting the timeout
         parameter, if not already present."""
-        kwargs.setdefault('timeout', self.timeout)
+        kwargs.setdefault("timeout", self.timeout)
         return kwargs
 
     @update_headers
@@ -248,19 +271,19 @@ class APIClient(
         for arg in args:
             if not isinstance(arg, str):
                 raise ValueError(
-                    'Expected a string but found {} ({}) '
-                    'instead'.format(arg, type(arg))
+                    "Expected a string but found {} ({}) "
+                    "instead".format(arg, type(arg))
                 )
 
         quote_f = partial(urllib.parse.quote, safe="/:")
         args = map(quote_f, args)
 
-        if kwargs.get('versioned_api', True):
-            return '{}/v{}{}'.format(
+        if kwargs.get("versioned_api", True):
+            return "{}/v{}{}".format(
                 self.base_url, self._version, pathfmt.format(*args)
             )
         else:
-            return f'{self.base_url}{pathfmt.format(*args)}'
+            return f"{self.base_url}{pathfmt.format(*args)}"
 
     def _raise_for_status(self, response):
         """Raises stored :class:`APIError`, if one occurred."""
@@ -290,19 +313,15 @@ class APIClient(
         elif data is not None:
             data2 = data
 
-        if 'headers' not in kwargs:
-            kwargs['headers'] = {}
-        kwargs['headers']['Content-Type'] = 'application/json'
+        if "headers" not in kwargs:
+            kwargs["headers"] = {}
+        kwargs["headers"]["Content-Type"] = "application/json"
         return self._post(url, data=json.dumps(data2), **kwargs)
 
     def _attach_params(self, override=None):
-        return override or {
-            'stdout': 1,
-            'stderr': 1,
-            'stream': 1
-        }
+        return override or {"stdout": 1, "stderr": 1, "stream": 1}
 
-    @check_resource('container')
+    @check_resource("container")
     def _attach_websocket(self, container, params=None):
         url = self._url("/containers/{0}/attach/ws", container)
         req = requests.Request("POST", url, params=self._attach_params(params))
@@ -318,7 +337,7 @@ class APIClient(
         self._raise_for_status(response)
         if self.base_url == "http+docker://localnpipe":
             sock = response.raw._fp.fp.raw.sock
-        elif self.base_url.startswith('http+docker://ssh'):
+        elif self.base_url.startswith("http+docker://ssh"):
             sock = response.raw._fp.fp.channel
         else:
             sock = response.raw._fp.fp.raw
@@ -366,8 +385,8 @@ class APIClient(
         while True:
             if buf_length - walker < STREAM_HEADER_SIZE_BYTES:
                 break
-            header = buf[walker:walker + STREAM_HEADER_SIZE_BYTES]
-            _, length = struct.unpack_from('>BxxxL', header)
+            header = buf[walker : walker + STREAM_HEADER_SIZE_BYTES]
+            _, length = struct.unpack_from(">BxxxL", header)
             start = walker + STREAM_HEADER_SIZE_BYTES
             end = start + length
             walker = end
@@ -386,7 +405,7 @@ class APIClient(
             header = response.raw.read(STREAM_HEADER_SIZE_BYTES)
             if not header:
                 break
-            _, length = struct.unpack('>BxxxL', header)
+            _, length = struct.unpack(">BxxxL", header)
             if not length:
                 continue
             data = response.raw.read(length)
@@ -395,7 +414,7 @@ class APIClient(
             yield data
 
     def _stream_raw_result(self, response, chunk_size=1, decode=True):
-        ''' Stream result for TTY-enabled container and raw binary data'''
+        """Stream result for TTY-enabled container and raw binary data"""
         self._raise_for_status(response)
 
         # Disable timeout on the underlying socket to prevent
@@ -424,7 +443,7 @@ class APIClient(
             return consume_socket_output(gen, demux=demux)
 
     def _disable_socket_timeout(self, socket):
-        """ Depending on the combination of python version and whether we're
+        """Depending on the combination of python version and whether we're
         connecting over http or https, we might need to access _sock, which
         may or may not exist; or we may need to just settimeout on socket
         itself, which also may or may not have settimeout on it. To avoid
@@ -434,15 +453,15 @@ class APIClient(
         you run the risk of changing a socket that was non-blocking to
         blocking, for example when using gevent.
         """
-        sockets = [socket, getattr(socket, '_sock', None)]
+        sockets = [socket, getattr(socket, "_sock", None)]
 
         for s in sockets:
-            if not hasattr(s, 'settimeout'):
+            if not hasattr(s, "settimeout"):
                 continue
 
             timeout = -1
 
-            if hasattr(s, 'gettimeout'):
+            if hasattr(s, "gettimeout"):
                 timeout = s.gettimeout()
 
             # Don't change the timeout if it is already disabled.
@@ -451,10 +470,10 @@ class APIClient(
 
             s.settimeout(None)
 
-    @check_resource('container')
+    @check_resource("container")
     def _check_is_tty(self, container):
         cont = self.inspect_container(container)
-        return cont['Config']['Tty']
+        return cont["Config"]["Tty"]
 
     def _get_result(self, container, stream, res):
         return self._get_result_tty(stream, res, self._check_is_tty(container))
@@ -463,17 +482,18 @@ class APIClient(
         # We should also use raw streaming (without keep-alives)
         # if we're dealing with a tty-enabled container.
         if is_tty:
-            return self._stream_raw_result(res) if stream else \
-                self._result(res, binary=True)
+            return (
+                self._stream_raw_result(res)
+                if stream
+                else self._result(res, binary=True)
+            )
 
         self._raise_for_status(res)
-        sep = b''
+        sep = b""
         if stream:
             return self._multiplexed_response_stream_helper(res)
         else:
-            return sep.join(
-                [x for x in self._multiplexed_buffer_helper(res)]
-            )
+            return sep.join([x for x in self._multiplexed_buffer_helper(res)])
 
     def _unmount(self, *args):
         for proto in args:

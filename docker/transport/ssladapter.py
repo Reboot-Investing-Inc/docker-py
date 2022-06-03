@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """ Resolves OpenSSL issues in some servers:
       https://lukasa.co.uk/2013/01/Choosing_SSL_Version_In_Requests/
       https://github.com/kennethreitz/requests/pull/799
@@ -21,18 +22,22 @@ PoolManager = urllib3.poolmanager.PoolManager
 # IP-address checking. Not necessary for Python 3.5 and above
 if sys.version_info[0] < 3 or sys.version_info[1] < 5:
     from backports.ssl_match_hostname import match_hostname
+
     urllib3.connection.match_hostname = match_hostname
 
 
 class SSLHTTPAdapter(BaseHTTPAdapter):
-    '''An HTTPS Transport Adapter that uses an arbitrary SSL version.'''
+    """An HTTPS Transport Adapter that uses an arbitrary SSL version."""
 
-    __attrs__ = HTTPAdapter.__attrs__ + ['assert_fingerprint',
-                                         'assert_hostname',
-                                         'ssl_version']
+    __attrs__ = HTTPAdapter.__attrs__ + [
+        "assert_fingerprint",
+        "assert_hostname",
+        "ssl_version",
+    ]
 
-    def __init__(self, ssl_version=None, assert_hostname=None,
-                 assert_fingerprint=None, **kwargs):
+    def __init__(
+        self, ssl_version=None, assert_hostname=None, assert_fingerprint=None, **kwargs
+    ):
         self.ssl_version = ssl_version
         self.assert_hostname = assert_hostname
         self.assert_fingerprint = assert_fingerprint
@@ -40,14 +45,14 @@ class SSLHTTPAdapter(BaseHTTPAdapter):
 
     def init_poolmanager(self, connections, maxsize, block=False):
         kwargs = {
-            'num_pools': connections,
-            'maxsize': maxsize,
-            'block': block,
-            'assert_hostname': self.assert_hostname,
-            'assert_fingerprint': self.assert_fingerprint,
+            "num_pools": connections,
+            "maxsize": maxsize,
+            "block": block,
+            "assert_hostname": self.assert_hostname,
+            "assert_fingerprint": self.assert_fingerprint,
         }
         if self.ssl_version and self.can_override_ssl_version():
-            kwargs['ssl_version'] = self.ssl_version
+            kwargs["ssl_version"] = self.ssl_version
 
         self.poolmanager = PoolManager(**kwargs)
 
@@ -65,9 +70,9 @@ class SSLHTTPAdapter(BaseHTTPAdapter):
         return conn
 
     def can_override_ssl_version(self):
-        urllib_ver = urllib3.__version__.split('-')[0]
+        urllib_ver = urllib3.__version__.split("-")[0]
         if urllib_ver is None:
             return False
-        if urllib_ver == 'dev':
+        if urllib_ver == "dev":
             return True
-        return StrictVersion(urllib_ver) > StrictVersion('1.5')
+        return StrictVersion(urllib_ver) > StrictVersion("1.5")

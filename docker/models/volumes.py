@@ -1,15 +1,17 @@
+# -*- coding: utf-8 -*-
 from ..api import APIClient
 from .resource import Model, Collection
 
 
 class Volume(Model):
     """A volume."""
-    id_attribute = 'Name'
+
+    id_attribute = "Name"
 
     @property
     def name(self):
         """The name of the volume."""
-        return self.attrs['Name']
+        return self.attrs["Name"]
 
     def remove(self, force=False):
         """
@@ -27,6 +29,7 @@ class Volume(Model):
 
 class VolumeCollection(Collection):
     """Volumes on the Docker server."""
+
     model = Volume
 
     def create(self, name=None, **kwargs):
@@ -90,10 +93,11 @@ class VolumeCollection(Collection):
                 If the server returns an error.
         """
         resp = self.client.api.volumes(**kwargs)
-        if not resp.get('Volumes'):
+        if not resp.get("Volumes"):
             return []
-        return [self.prepare_model(obj) for obj in resp['Volumes']]
+        return [self.prepare_model(obj) for obj in resp["Volumes"]]
 
     def prune(self, filters=None):
         return self.client.api.prune_volumes(filters=filters)
+
     prune.__doc__ = APIClient.prune_volumes.__doc__

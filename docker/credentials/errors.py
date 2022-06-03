@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 class StoreError(RuntimeError):
     pass
 
@@ -11,15 +12,11 @@ class InitializationError(StoreError):
 
 
 def process_store_error(cpe, program):
-    message = cpe.output.decode('utf-8')
-    if 'credentials not found in native keychain' in message:
-        return CredentialsNotFound(
-            'No matching credentials in {}'.format(
-                program
-            )
-        )
+    message = cpe.output.decode("utf-8")
+    if "credentials not found in native keychain" in message:
+        return CredentialsNotFound("No matching credentials in {}".format(program))
     return StoreError(
         'Credentials store {} exited with "{}".'.format(
-            program, cpe.output.decode('utf-8').strip()
+            program, cpe.output.decode("utf-8").strip()
         )
     )

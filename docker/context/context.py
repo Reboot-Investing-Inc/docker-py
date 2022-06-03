@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import json
 from shutil import copyfile, rmtree
@@ -12,8 +13,7 @@ from docker.context.config import get_context_host
 class Context:
     """A context."""
 
-    def __init__(self, name, orchestrator=None, host=None, endpoints=None,
-                 tls=False):
+    def __init__(self, name, orchestrator=None, host=None, endpoints=None, tls=False):
         if not name:
             raise Exception("Name not provided")
         self.name = name
@@ -26,14 +26,16 @@ class Context:
 
         if not endpoints:
             # set default docker endpoint if no endpoint is set
-            default_endpoint = "docker" if (
-                not orchestrator or orchestrator == "swarm"
-                ) else orchestrator
+            default_endpoint = (
+                "docker"
+                if (not orchestrator or orchestrator == "swarm")
+                else orchestrator
+            )
 
             self.endpoints = {
                 default_endpoint: {
                     "Host": get_context_host(host, tls),
-                    "SkipTLSVerify": not tls
+                    "SkipTLSVerify": not tls,
                 }
             }
             return
@@ -42,24 +44,31 @@ class Context:
         for k, v in endpoints.items():
             if not isinstance(v, dict):
                 # unknown format
-                raise ContextException("""Unknown endpoint format for
-                    context {}: {}""".format(name, v))
+                raise ContextException(
+                    """Unknown endpoint format for
+                    context {}: {}""".format(
+                        name, v
+                    )
+                )
 
             self.endpoints[k] = v
             if k != "docker":
                 continue
 
-            self.endpoints[k]["Host"] = v.get("Host", get_context_host(
-                host, tls))
-            self.endpoints[k]["SkipTLSVerify"] = bool(v.get(
-                "SkipTLSVerify", not tls))
+            self.endpoints[k]["Host"] = v.get("Host", get_context_host(host, tls))
+            self.endpoints[k]["SkipTLSVerify"] = bool(v.get("SkipTLSVerify", not tls))
 
     def set_endpoint(
-            self, name="docker", host=None, tls_cfg=None,
-            skip_tls_verify=False, def_namespace=None):
+        self,
+        name="docker",
+        host=None,
+        tls_cfg=None,
+        skip_tls_verify=False,
+        def_namespace=None,
+    ):
         self.endpoints[name] = {
             "Host": get_context_host(host, not skip_tls_verify),
-            "SkipTLSVerify": skip_tls_verify
+            "SkipTLSVerify": skip_tls_verify,
         }
         if def_namespace:
             self.endpoints[name]["DefaultNamespace"] = def_namespace
@@ -77,7 +86,8 @@ class Context:
             instance = cls(
                 meta["Name"],
                 orchestrator=meta["Metadata"].get("StackOrchestrator", None),
-                endpoints=meta.get("Endpoints", None))
+                endpoints=meta.get("Endpoints", None),
+            )
             instance.context_type = meta["Metadata"].get("Type", None)
             instance._load_certs()
             instance.meta_path = get_meta_dir(name)
@@ -96,8 +106,12 @@ class Context:
                 metadata = json.load(f)
         except (OSError, KeyError, ValueError) as e:
             # unknown format
-            raise Exception("""Detected corrupted meta file for
-                context {} : {}""".format(name, e))
+            raise Exception(
+                """Detected corrupted meta file for
+                context {} : {}""".format(
+                    name, e
+                )
+            )
 
         # for docker endpoints, set defaults for
         # Host and SkipTLSVerify fields
@@ -105,9 +119,11 @@ class Context:
             if k != "docker":
                 continue
             metadata["Endpoints"][k]["Host"] = v.get(
-                "Host", get_context_host(None, False))
+                "Host", get_context_host(None, False)
+            )
             metadata["Endpoints"][k]["SkipTLSVerify"] = bool(
-                v.get("SkipTLSVerify", True))
+                v.get("SkipTLSVerify", True)
+            )
 
         return metadata
 
@@ -130,10 +146,12 @@ class Context:
             if all([ca_cert, cert, key]):
                 verify = None
                 if endpoint == "docker" and not self.endpoints["docker"].get(
-                        "SkipTLSVerify", False):
+                    "SkipTLSVerify", False
+                ):
                     verify = True
                 certs[endpoint] = TLSConfig(
-                    client_cert=(cert, key), ca_cert=ca_cert, verify=verify)
+                    client_cert=(cert, key), ca_cert=ca_cert, verify=verify
+                )
         self.tls_cfg = certs
         self.tls_path = tls_dir
 
@@ -151,15 +169,20 @@ class Context:
 
             ca_file = tls.ca_cert
             if ca_file:
-                copyfile(ca_file, os.path.join(
-                    tls_dir, endpoint, os.path.basename(ca_file)))
+                copyfile(
+                    ca_file, os.path.join(tls_dir, endpoint, os.path.basename(ca_file))
+                )
 
             if tls.cert:
                 cert_file, key_file = tls.cert
-                copyfile(cert_file, os.path.join(
-                    tls_dir, endpoint, os.path.basename(cert_file)))
-                copyfile(key_file, os.path.join(
-                    tls_dir, endpoint, os.path.basename(key_file)))
+                copyfile(
+                    cert_file,
+                    os.path.join(tls_dir, endpoint, os.path.basename(cert_file)),
+                )
+                copyfile(
+                    key_file,
+                    os.path.join(tls_dir, endpoint, os.path.basename(key_file)),
+                )
 
         self.meta_path = get_meta_dir(self.name)
         self.tls_path = get_tls_dir(self.name)
@@ -208,11 +231,7 @@ class Context:
         meta = {}
         if self.orchestrator:
             meta = {"StackOrchestrator": self.orchestrator}
-        return {
-            "Name": self.name,
-            "Metadata": meta,
-            "Endpoints": self.endpoints
-        }
+        return {"Name": self.name, "Metadata": meta, "Endpoints": self.endpoints}
 
     @property
     def TLSConfig(self):
@@ -228,16 +247,9 @@ class Context:
         certs = {}
         for endpoint, tls in self.tls_cfg.items():
             cert, key = tls.cert
-            certs[endpoint] = list(
-                map(os.path.basename, [tls.ca_cert, cert, key]))
-        return {
-            "TLSMaterial": certs
-        }
+            certs[endpoint] = list(map(os.path.basename, [tls.ca_cert, cert, key]))
+        return {"TLSMaterial": certs}
 
     @property
     def Storage(self):
-        return {
-            "Storage": {
-                "MetadataPath": self.meta_path,
-                "TLSPath": self.tls_path
-            }}
+        return {"Storage": {"MetadataPath": self.meta_path, "TLSPath": self.tls_path}}

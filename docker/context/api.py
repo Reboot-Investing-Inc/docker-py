@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import os
 
@@ -14,12 +15,19 @@ class ContextAPI:
     Contains methods for context management:
     create, list, remove, get, inspect.
     """
+
     DEFAULT_CONTEXT = Context("default", "swarm")
 
     @classmethod
     def create_context(
-            cls, name, orchestrator=None, host=None, tls_cfg=None,
-            default_namespace=None, skip_tls_verify=False):
+        cls,
+        name,
+        orchestrator=None,
+        host=None,
+        tls_cfg=None,
+        default_namespace=None,
+        skip_tls_verify=False,
+    ):
         """Creates a new context.
         Returns:
             (Context): a Context object.
@@ -50,8 +58,7 @@ class ContextAPI:
         if not name:
             raise errors.MissingContextParameter("name")
         if name == "default":
-            raise errors.ContextException(
-                '"default" is a reserved context name')
+            raise errors.ContextException('"default" is a reserved context name')
         ctx = Context.load_context(name)
         if ctx:
             raise errors.ContextAlreadyExists(name)
@@ -60,9 +67,12 @@ class ContextAPI:
             endpoint = orchestrator
         ctx = Context(name, orchestrator)
         ctx.set_endpoint(
-            endpoint, host, tls_cfg,
+            endpoint,
+            host,
+            tls_cfg,
             skip_tls_verify=skip_tls_verify,
-            def_namespace=default_namespace)
+            def_namespace=default_namespace,
+        )
         ctx.save()
         return ctx
 
@@ -108,13 +118,12 @@ class ContextAPI:
             for filename in fnames + dirnames:
                 if filename == METAFILE:
                     try:
-                        data = json.load(
-                            open(os.path.join(dirname, filename)))
+                        data = json.load(open(os.path.join(dirname, filename)))
                         names.append(data["Name"])
                     except Exception as e:
                         raise errors.ContextException(
-                            "Failed to load metafile {}: {}".format(
-                                filename, e))
+                            "Failed to load metafile {}: {}".format(filename, e)
+                        )
 
         contexts = [cls.DEFAULT_CONTEXT]
         for name in names:
@@ -137,8 +146,7 @@ class ContextAPI:
 
         err = write_context_name_to_docker_config(name)
         if err:
-            raise errors.ContextException(
-                f'Failed to set current context: {err}')
+            raise errors.ContextException(f"Failed to set current context: {err}")
 
     @classmethod
     def remove_context(cls, name):
@@ -164,8 +172,7 @@ class ContextAPI:
         if not name:
             raise errors.MissingContextParameter("name")
         if name == "default":
-            raise errors.ContextException(
-                'context "default" cannot be removed')
+            raise errors.ContextException('context "default" cannot be removed')
         ctx = Context.load_context(name)
         if not ctx:
             raise errors.ContextNotFound(name)
