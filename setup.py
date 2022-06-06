@@ -5,14 +5,14 @@ import codecs
 import os
 
 from setuptools import find_packages
-from setuptools import setup
+from distutils.core import setup
 
 ROOT_DIR = os.path.dirname(__file__)
 SOURCE_DIR = os.path.join(ROOT_DIR)
 
 requirements = [
     "websocket-client >= 1.3.2",
-    "requests >= 2.27.0",
+    "requests >= 2.27.1",
 ]
 
 extras_require = {
@@ -25,17 +25,18 @@ extras_require = {
     # https://github.com/pypa/pip/issues/4391).  Once that's fixed, instead of
     # installing the extra dependencies, install the following instead:
     # 'requests[security] >= 2.5.2, != 2.11.0, != 2.12.2'
-    "tls": ["pyOpenSSL>=17.5.0", "cryptography>=3.4.7", "idna>=2.0.0"],
+    "tls": [
+        "requests[security] >= 2.27.1",
+        "pyOpenSSL>=17.5.0",
+        "cryptography>=3.4.7",
+        "idna>=2.0.0",
+    ],
     # Only required when connecting using the ssh:// protocol
     "ssh": ["paramiko>=2.4.3"],
 }
 
 version = None
 exec(open("docker/version.py").read())
-
-with open("./test-requirements.txt") as test_reqs_txt:
-    test_requirements = [line for line in test_reqs_txt]
-
 
 long_description = ""
 with codecs.open("./README.md", encoding="utf-8") as readme_md:
@@ -47,20 +48,13 @@ setup(
     description="A Python library for the Docker Engine API.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/docker/docker-py",
-    project_urls={
-        "Documentation": "https://docker-py.readthedocs.io",
-        "Changelog": "https://docker-py.readthedocs.io/en/stable/change-log.html",  # noqa: E501
-        "Source": "https://github.com/docker/docker-py",
-        "Tracker": "https://github.com/docker/docker-py/issues",
-    },
     packages=find_packages(exclude=["tests.*", "tests"]),
     install_requires=requirements,
-    tests_require=test_requirements,
     extras_require=extras_require,
-    python_requires=">=3.6",
+    python_requires=">=3.10,<3.11",
+    python=">=3.10,<3.11",
+    markers=">=3.10,<3.11",
     zip_safe=False,
-    test_suite="tests",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Other Environment",
@@ -68,15 +62,11 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Topic :: Software Development",
         "Topic :: Utilities",
         "License :: OSI Approved :: Apache Software License",
     ],
-    maintainer="Ulysses Souza",
-    maintainer_email="ulysses.souza@docker.com",
+    maintainer="Ashwin Kapur",
+    maintainer_email="ashwin@rebootinvesting.com",
 )
